@@ -1,4 +1,4 @@
-name: Android CI/CD
+name: Build Ultra Low Battery SMS Bot APK
 
 on:
   push:
@@ -19,24 +19,21 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Create Isolated Sandbox & Project Structure
+    - name: Generate Lightweight Android App
       run: |
-        # ۱. پاکسازی همه‌جانبه برای جلوگیری از هرگونه تداخل فایل‌های قبلی
         rm -rf app gradle .gradle build build.gradle settings.gradle gradlew gradlew.bat
         
-        # ۲. ساختار دایرکتوری‌های استاندارد ماژول اصلی
-        mkdir -p app/src/main/java/com/example/iread
+        mkdir -p app/src/main/java/com/example/smsbot
         mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/values
-        mkdir -p app/src/main/assets
 
-        # ۳. ساخت فایل تنظیمات پروژه
+        # ۱. تنظیمات گریدل
         echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
         echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
-        echo "rootProject.name = 'iReadApp'" >> settings.gradle
+        echo "rootProject.name = 'SmsTelegramBot'" >> settings.gradle
         echo "include ':app'" >> settings.gradle
 
-        # ۴. فایل گریدل روت
+        # ۲. گریدل پروژه
         cat << 'EOF' > build.gradle
         buildscript {
             repositories { google(); mavenCentral() }
@@ -44,85 +41,200 @@ jobs:
         }
         EOF
 
-        # ۵. فایل گریدل اپلیکیشن
+        # ۳. گریدل اپلیکیشن
         cat << 'EOF' > app/build.gradle
         plugins { id 'com.android.application' }
         android {
-            namespace 'com.example.iread'
+            namespace 'com.example.smsbot'
             compileSdk 34
             defaultConfig {
-                applicationId "com.example.iread"
+                applicationId "com.example.smsbot"
                 minSdk 24
                 targetSdk 34
-                versionCode 1
-                versionName "1.0"
+                versionCode 3
+                versionName "3.0"
             }
         }
         EOF
 
-        # ۶. مانیفست اندروید با دسترسی اینترنت
+        # ۴. مانیفست اندروید (بدون نیاز به دسترسی استارت‌آپ سنگین)
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <uses-permission android:name="android.permission.RECEIVE_SMS" />
+            <uses-permission android:name="android.permission.READ_SMS" />
             <uses-permission android:name="android.permission.INTERNET" />
-            <application android:label="iRead" android:theme="@android:style/Theme.Material.NoActionBar" android:usesCleartextTraffic="true">
+
+            <application android:label="SMS Battery Saver Bot" android:theme="@android:style/Theme.DeviceDefault">
                 <activity android:name=".MainActivity" android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
                         <category android:name="android.intent.category.LAUNCHER" />
                     </intent-filter>
                 </activity>
+                
+                <receiver android:name=".SmsReceiver" android:permission="android.permission.BROADCAST_SMS" android:exported="true">
+                    <intent-filter android:priority="999">
+                        <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+                    </intent-filter>
+                </receiver>
             </application>
         </manifest>
         EOF
 
-        # ۷. کدهای اکتیویتی اصلی (WebView Launcher)
-        cat << 'EOF' > app/src/main/java/com/example/iread/MainActivity.java
-        package com.example.iread;
-        import android/app/Activity;
-        import android/os/Bundle;
-        import android/webkit/WebView;
-        import android/webkit/WebViewClient;
+        # ۵. رابط کاربری برنامه (UI)
+        cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+        <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="16dp">
+            <LinearLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <TextView android:text="تنظیمات ربات (نسخه بهینه ساز باتری)" android:textSize="18sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="16dp"/>
+                
+                <EditText android:id="@+id/etToken" android:hint="Telegram Bot Token" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp"/>
+                <EditText android:id="@+id/etChatId" android:hint="Telegram Chat ID" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp"/>
+                <EditText android:id="@+id/etSenders" android:hint="سرشماره‌ها (مثل: 982000400,Varian)" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="20dp"/>
+                
+                <Button android:id="@+id/btnSave" android:text="ذخیره تنظیمات" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                <TextView android:id="@+id/tvStatus" android:text="وضعیت: آماده کار (بدون مصرف باتری در پس‌زمینه)" android:textColor="#00FF00" android:layout_marginTop="20dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            </LinearLayout>
+        </ScrollView>
+        EOF
+
+        # ۶. کد جاوا مدیریت تنظیمات
+        cat << 'EOF' > app/src/main/java/com/example/smsbot/MainActivity.java
+        package com.example.smsbot;
+        import android.app.Activity;
+        import android.content.SharedPreferences;
+        import android.os.Bundle;
+        import android.view.View;
+        import android.widget.Button;
+        import android.widget.EditText;
+        import android.widget.Toast;
+        import android.Manifest;
+
         public class MainActivity extends Activity {
+            private EditText etToken, etChatId, etSenders;
+            private SharedPreferences prefs;
+
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
-                WebView webView = new WebView(this);
-                webView.getSettings().setJavaScriptEnabled(true);
-                webView.getSettings().setDomStorageEnabled(true);
-                webView.setWebViewClient(new WebViewClient());
-                setContentView(webView);
-                webView.loadUrl("file:///android_asset/index.html");
+                setContentView(getResources().getIdentifier("activity_main", "layout", getPackageName()));
+
+                prefs = getSharedPreferences("SmsBotPrefs", MODE_PRIVATE);
+                etToken = findViewById(getResources().getIdentifier("etToken", "id", getPackageName()));
+                etChatId = findViewById(getResources().getIdentifier("etChatId", "id", getPackageName()));
+                etSenders = findViewById(getResources().getIdentifier("etSenders", "id", getPackageName()));
+                Button btnSave = findViewById(getResources().getIdentifier("btnSave", "id", getPackageName()));
+
+                etToken.setText(prefs.getString("token", ""));
+                etChatId.setText(prefs.getString("chatId", ""));
+                etSenders.setText(prefs.getString("senders", ""));
+
+                if (checkSelfPermission(Manifest.permission.RECEIVE_SMS) != 0) {
+                    requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS}, 101);
+                }
+
+                btnSave.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        prefs.edit()
+                            .putString("token", etToken.getText().toString().trim())
+                            .putString("chatId", etChatId.getText().toString().trim())
+                            .putString("senders", etSenders.getText().toString().trim())
+                            .apply();
+                        Toast.makeText(MainActivity.this, "تنظیمات ذخیره شد", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         }
         EOF
 
-        # ۸. ساخت فایل استایل‌های ضروری
-        echo '<resources><string name="app_name">iRead</string></resources>' > app/src/main/res/values/strings.xml
+        # ۷. منطق اسکن سریع و خاموش شدن آنی فرآیند
+        cat << 'EOF' > app/src/main/java/com/example/smsbot/SmsReceiver.java
+        package com.example.smsbot;
+        import android.content.BroadcastReceiver;
+        import android.content.Context;
+        import android.content.Intent;
+        import android.content.SharedPreferences;
+        import android.os.Bundle;
+        import android.telephony.SmsMessage;
+        import java.net.HttpURLConnection;
+        import java.net.URL;
 
-        # ۹. استخراج محتوای فایل شما مستقیم به وب‌ویو اپلیکیشن
-        if [ -f iRead.tar ]; then
-          tar -xvf iRead.tar -C app/src/main/assets/ || true
-          # اطمینان از اینکه اگر کدهای شما داخل ساب‌فولدر بود، فایل اصلی پیدا شود
-          cd app/src/main/assets/
-          if [ -d iRead ]; then
-            mv iRead/* . && rm -rf iRead
-          fi
-          # ساخت یک فایل کمکی در صورت نبود فایل اصلی
-          if [ ! -f index.html ]; then
-            echo "<h1>iRead App Launched</h1>" > index.html
-          fi
-          cd ../../../..
-        fi
+        public class SmsReceiver extends BroadcastReceiver {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent == null || intent.getExtras() == null) return;
+                
+                SharedPreferences prefs = context.getSharedPreferences("SmsBotPrefs", Context.MODE_PRIVATE);
+                final String token = prefs.getString("token", "");
+                final String chatId = prefs.getString("chatId", "");
+                String allowedSenders = prefs.getString("senders", "");
 
-    - name: Build Android Clean APK
+                if (token.isEmpty() || chatId.isEmpty()) return;
+
+                Object[] pdus = (Object[]) intent.getExtras().get("pdus");
+                if (pdus != null) {
+                    for (Object pdu : pdus) {
+                        SmsMessage sms = SmsMessage.createFromPdu((byte[]) pdu);
+                        String sender = sms.getOriginatingAddress();
+                        String body = sms.getMessageBody();
+
+                        if (sender == null || body == null) continue;
+
+                        // فیلتر سریع سرشماره برای جلوگیری از ادامه اجرای کد بیهوده
+                        boolean isAllowed = false;
+                        if (!allowedSenders.isEmpty()) {
+                            String[] sendersArray = allowedSenders.split(",");
+                            for (String s : sendersArray) {
+                                if (sender.contains(s.trim())) {
+                                    isAllowed = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // در صورت تایید فرستنده و متن، در یک ترد فوق‌العاده موقت ارسال و سریعاً بسته می‌شود
+                        if (isAllowed && (body.contains("واریز") || body.contains("موفق") || body.contains("مانده"))) {
+                            sendToTelegramAndDie(token, chatId, "فرستنده: " + sender + "\n\n" + body);
+                        }
+                    }
+                }
+            }
+
+            private void sendToTelegramAndDie(final String token, final String chatId, final String text) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        HttpURLConnection conn = null;
+                        try {
+                            String urlString = "https://api.telegram.org/bot" + token + "/sendMessage?chat_id=" + chatId + "&text=" + java.net.URLEncoder.encode(text, "UTF-8");
+                            URL url = new URL(urlString);
+                            conn = (HttpURLConnection) url.openConnection();
+                            conn.setRequestMethod("GET");
+                            conn.setConnectTimeout(4000); // مهلت اتصال کوتاه برای جلوگیری از باز ماندن ترد
+                            conn.setReadTimeout(4000);
+                            conn.getInputStream().read();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } finally {
+                            if (conn != null) conn.disconnect();
+                        }
+                    }
+                }).start();
+            }
+        }
+        EOF
+
+        echo '<resources><string name="app_name">SmsBot</string></resources>' > app/src/main/res/values/strings.xml
+
+    - name: Build Clean Android Production APK
       run: |
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew
         ./gradlew :app:assembleDebug --no-daemon
 
-    - name: Upload APK Artifact
+    - name: Upload Clean APK
       uses: actions/upload-artifact@v4
       with:
-        name: iread-final-build
+        name: SMS-BatterySaver-Bot
         path: 'app/build/outputs/apk/debug/*.apk'
         
