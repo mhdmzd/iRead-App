@@ -1,4 +1,4 @@
-name: Build Fixed Beautiful SMS Bot APK
+name: Build Fixed SMS Bot APK
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Generate Stable Android App
+    - name: Generate Clean Android Project
       run: |
         rm -rf app gradle .gradle build build.gradle settings.gradle gradlew gradlew.bat
         
@@ -48,8 +48,8 @@ jobs:
                 applicationId "com.example.smsbot"
                 minSdk 24
                 targetSdk 34
-                versionCode 7
-                versionName "7.0"
+                versionCode 8
+                versionName "8.0"
             }
         }
         EOF
@@ -59,15 +59,13 @@ jobs:
             <uses-permission android:name="android.permission.RECEIVE_SMS" />
             <uses-permission android:name="android.permission.READ_SMS" />
             <uses-permission android:name="android.permission.INTERNET" />
-
-            <application android:label="تنظیمات ربات پیامک" android:theme="@android:style/Theme.DeviceDefault.Lollipop">
+            <application android:label="SmsBot" android:theme="@android:style/Theme.DeviceDefault.Lollipop">
                 <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="portrait">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
                         <category android:name="android.intent.category.LAUNCHER" />
                     </intent-filter>
                 </activity>
-                
                 <receiver android:name=".SmsReceiver" android:permission="android.permission.BROADCAST_SMS" android:exported="true">
                     <intent-filter android:priority="999">
                         <action android:name="android.provider.Telephony.SMS_RECEIVED" />
@@ -78,61 +76,17 @@ jobs:
         EOF
 
         cat << 'EOF' > app/src/main/res/layout/activity_main.xml
-        <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" 
-            android:layout_width="match_parent" 
-            android:layout_height="match_parent"
-            android:fillViewport="true">
-            
-            <LinearLayout 
-                android:orientation="vertical" 
-                android:layout_width="match_parent" 
-                android:layout_height="wrap_content" 
-                android:padding="24dp">
-                
-                <TextView 
-                    android:text="تنظیمات ربات هوشمند پیامک" 
-                    android:textSize="20sp" 
-                    android:textStyle="bold" 
-                    android:layout_width="wrap_content" 
-                    android:layout_height="wrap_content" 
-                    android:layout_gravity="right"
-                    android:layout_marginBottom="6dp"/>
-
-                <TextView 
-                    android:text="نسخه بهینه ساز مصرف باتری و منابع سیستم" 
-                    android:textSize="13sp" 
-                    android:layout_width="wrap_content" 
-                    android:layout_height="wrap_content" 
-                    android:layout_gravity="right"
-                    android:layout_marginBottom="32dp"/>
-                
-                <TextView android:text="توکن ربات تلگرام (Bot Token):" android:textSize="14sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="6dp"/>
-                <EditText android:id="@+id/etToken" android:hint="Telegram Bot Token" android:textSize="15sp" android:padding="12dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="20dp"/>
-                
-                <TextView android:text="شناسه چت تلگرام (Chat ID):" android:textSize="14sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="6dp"/>
-                <EditText android:id="@+id/etChatId" android:hint="Telegram Chat ID" android:textSize="15sp" android:padding="12dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="20dp"/>
-
-                <TextView android:text="فیلتر سرشماره‌های بانکی:" android:textSize="14sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="4dp"/>
-                <TextView android:text="نام یا شماره‌ها را با کاما (,) جدا کنید" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="8dp"/>
-                <EditText android:id="@+id/etSenders" android:hint="مثال: Bank Mellat, 982000400" android:textSize="15sp" android:padding="12dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="32dp"/>
-                
-                <Button 
-                    android:id="@+id/btnSave" 
-                    android:text="ذخیره و فعال‌سازی ربات" 
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:padding="14dp"
-                    android:layout_width="match_parent" 
-                    android:layout_height="wrap_content"/>
-                    
-                <TextView 
-                    android:id="@+id/tvStatus" 
-                    android:text="● وضعیت: آماده به‌کار (مصرف باتری نزدیک به صفر)" 
-                    android:textSize="14sp"
-                    android:layout_marginTop="24dp" 
-                    android:layout_gravity="center"
-                    android:layout_width="wrap_content" 
-                    android:layout_height="wrap_content"/>
+        <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
+            <LinearLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="24dp">
+                <TextView android:text="تنظیمات ربات هوشمند پیامک" android:textSize="20sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="32dp"/>
+                <TextView android:text="Telegram Bot Token:" android:textSize="14sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="6dp"/>
+                <EditText android:id="@+id/etToken" android:hint="Token" android:textSize="15sp" android:padding="12dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="20dp"/>
+                <TextView android:text="Telegram Chat ID:" android:textSize="14sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="6dp"/>
+                <EditText android:id="@+id/etChatId" android:hint="Chat ID" android:textSize="15sp" android:padding="12dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="20dp"/>
+                <TextView android:text="سرشماره‌های بانکی (جداکننده با کاما):" android:textSize="14sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="6dp"/>
+                <EditText android:id="@+id/etSenders" android:hint="Mellat, Tejarat, 982000" android:textSize="15sp" android:padding="12dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="32dp"/>
+                <Button android:id="@+id/btnSave" android:text="ذخیره تنظیمات" android:textSize="16sp" android:textStyle="bold" android:padding="14dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                <TextView android:id="@+id/tvStatus" android:text="وضعیت: آماده به کار (بهینه باتری)" android:textSize="14sp" android:layout_marginTop="24dp" android:layout_gravity="center" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
             </LinearLayout>
         </ScrollView>
         EOF
@@ -179,7 +133,7 @@ jobs:
                             .putString("chatId", etChatId.getText().toString().trim())
                             .putString("senders", etSenders.getText().toString().trim())
                             .apply();
-                        Toast.makeText(MainActivity.this, "تنظیمات با موفقیت ذخیره شد", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "ذخیره شد", Toast.LENGTH_SHORT).show();
                     }
                 });
             }
