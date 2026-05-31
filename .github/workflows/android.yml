@@ -1,4 +1,4 @@
-name: Build Ultimate SMS Bot APK
+name: Build Fixed Beautiful SMS Bot APK
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Generate Premium Android App
+    - name: Generate Stable Android App
       run: |
         rm -rf app gradle .gradle build build.gradle settings.gradle gradlew gradlew.bat
         
@@ -27,13 +27,13 @@ jobs:
         mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/values
 
-        # تنظیمات گریدل
+        # ۱. تنظیمات گریدل
         echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
         echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
         echo "rootProject.name = 'SmsTelegramBot'" >> settings.gradle
         echo "include ':app'" >> settings.gradle
 
-        # گریدل پروژه
+        # ۲. گریدل پروژه
         cat << 'EOF' > build.gradle
         buildscript {
             repositories { google(); mavenCentral() }
@@ -41,7 +41,7 @@ jobs:
         }
         EOF
 
-        # گریدل اپلیکیشن
+        # ۳. گریدل اپلیکیشن
         cat << 'EOF' > app/build.gradle
         plugins { id 'com.android.application' }
         android {
@@ -51,13 +51,13 @@ jobs:
                 applicationId "com.example.smsbot"
                 minSdk 24
                 targetSdk 34
-                versionCode 5
-                versionName "5.0"
+                versionCode 6
+                versionName "6.0"
             }
         }
         EOF
 
-        # مانیفست اندروید
+        # ۴. مانیفست اندروید
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <uses-permission android:name="android.permission.RECEIVE_SMS" />
@@ -81,82 +81,60 @@ jobs:
         </manifest>
         EOF
 
-        # رابط کاربری شیک و یوزرفرندلی
+        # ۵. رابط کاربری تمیز، مرتب و راست‌چین با تگ‌های بومی (بدون ایجاد خطا)
         cat << 'EOF' > app/src/main/res/layout/activity_main.xml
         <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" 
             android:layout_width="match_parent" 
-            android:layout_height="match_parent" 
-            android:background="#F5F7FA"
+            android:layout_height="match_parent"
             android:fillViewport="true">
             
             <LinearLayout 
                 android:orientation="vertical" 
                 android:layout_width="match_parent" 
                 android:layout_height="wrap_content" 
-                android:padding="20dp">
+                android:padding="24dp">
                 
                 <TextView 
                     android:text="تنظیمات ربات هوشمند پیامک" 
                     android:textSize="20sp" 
                     android:textStyle="bold" 
-                    android:textColor="#1E293B"
                     android:layout_width="wrap_content" 
                     android:layout_height="wrap_content" 
                     android:layout_gravity="right"
-                    android:layout_marginBottom="4dp"/>
+                    android:layout_marginBottom="6dp"/>
 
                 <TextView 
                     android:text="نسخه بهینه ساز مصرف باتری و منابع سیستم" 
-                    android:textSize="12sp" 
-                    android:textColor="#64748B"
+                    android:textSize="13sp" 
                     android:layout_width="wrap_content" 
                     android:layout_height="wrap_content" 
                     android:layout_gravity="right"
-                    android:layout_marginBottom="24dp"/>
+                    android:layout_marginBottom="32dp"/>
                 
-                <LinearLayout 
-                    android:orientation="vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="#FFFFFF"
-                    android:padding="16dp"
-                    android:layout_marginBottom="16dp">
-                    
-                    <TextView android:text="تنظیمات اتصال تلگرام" android:textSize="14sp" android:textStyle="bold" android:textColor="#475569" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="12dp"/>
-                    <EditText android:id="@+id/etToken" android:hint="Telegram Bot Token" android:textSize="14sp" android:background="#F8FAFC" android:padding="12dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp"/>
-                    <EditText android:id="@+id/etChatId" android:hint="Telegram Chat ID" android:textSize="14sp" android:background="#F8FAFC" android:padding="12dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-                </LinearLayout>
+                <TextView android:text="توکن ربات تلگرام (Bot Token):" android:textSize="14sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="6dp"/>
+                <EditText android:id="@+id/etToken" android:hint="Telegram Bot Token" android:textSize="15sp" android:padding="12dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="20dp"/>
+                
+                <TextView android:text="شناسه چت تلگرام (Chat ID):" android:textSize="14sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="6dp"/>
+                <EditText android:id="@+id/etChatId" android:hint="Telegram Chat ID" android:textSize="15sp" android:padding="12dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="20dp"/>
 
-                <LinearLayout 
-                    android:orientation="vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="#FFFFFF"
-                    android:padding="16dp"
-                    android:layout_marginBottom="24dp">
-                    
-                    <TextView android:text="فیلتر سرشماره‌های بانکی" android:textSize="14sp" android:textStyle="bold" android:textColor="#475569" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="6dp"/>
-                    <TextView android:text="نام یا شماره‌ها را با کاما (,) جدا کنید" android:textSize="11sp" android:textColor="#94A3B8" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="12dp"/>
-                    <EditText android:id="@+id/etSenders" android:hint="مثال: Bank Mellat, 982000400" android:textSize="14sp" android:background="#F8FAFC" android:padding="12dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-                </LinearLayout>
+                <TextView android:text="فیلتر سرشماره‌های بانکی:" android:textSize="14sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="4dp"/>
+                <TextView android:text="نام یا شماره‌ها را با کاما (,) جدا کنید" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="8dp"/>
+                <EditText android:id="@+id/etSenders" android:hint="مثال: Bank Mellat, 982000400" android:textSize="15sp" android:padding="12dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="32dp"/>
                 
                 <Button 
                     android:id="@+id/btnSave" 
-                    android:text="ذخیره و فعال‌سازی سرویس" 
-                    android:textSize="15sp"
+                    android:text="ذخیره و فعال‌سازی ربات" 
+                    android:textSize="16sp"
                     android:textStyle="bold"
-                    android:textColor="#FFFFFF"
-                    android:background="#3F51B5"
                     android:padding="14dp"
                     android:layout_width="match_parent" 
                     android:layout_height="wrap_content"/>
                     
                 <TextView 
                     android:id="@+id/tvStatus" 
-                    android:text="● وضعیت: آماده به‌کار (بدون مصرف باتری)" 
-                    android:textColor="#10B981" 
-                    android:textSize="13sp"
-                    android:layout_marginTop="20dp" 
+                    android:text="● وضعیت: آماده به‌کار (مصرف باتری نزدیک به صفر)" 
+                    android:textSize="14sp"
+                    android:layout_marginTop="24dp" 
                     android:layout_gravity="center"
                     android:layout_width="wrap_content" 
                     android:layout_height="wrap_content"/>
@@ -164,7 +142,7 @@ jobs:
         </ScrollView>
         EOF
 
-        # کد جاوا اصلی
+        # ۶. کد جاوا مدیریت دکمه و حافظه گوشی
         cat << 'EOF' > app/src/main/java/com/example/smsbot/MainActivity.java
         package com.example.smsbot;
         import android.app.Activity;
@@ -207,14 +185,14 @@ jobs:
                             .putString("chatId", etChatId.getText().toString().trim())
                             .putString("senders", etSenders.getText().toString().trim())
                             .apply();
-                        Toast.makeText(MainActivity.this, "تنظیمات جدید با موفقیت اعمال شد", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "تنظیمات با موفقیت ذخیره شد", Toast.LENGTH_SHORT).show();
                     }
                 });
             }
         }
         EOF
 
-        # گیرنده پیامک بدون حساسیت به حروف بزرگ و کوچک
+        # ۷. منطق رسیور هوشمند و بدون حساسیت به حروف بزرگ و کوچک
         cat << 'EOF' > app/src/main/java/com/example/smsbot/SmsReceiver.java
         package com.example.smsbot;
         import android.content.BroadcastReceiver;
@@ -300,5 +278,6 @@ jobs:
     - name: Upload Clean APK
       uses: actions/upload-artifact@v4
       with:
-        name: SMS-Premium-Bot
+        name: SMS-Stable-Bot
         path: 'app/build/outputs/apk/debug/*.apk'
+        
