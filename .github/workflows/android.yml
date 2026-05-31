@@ -1,4 +1,4 @@
-name: Build Beautiful Low Battery SMS Bot APK
+name: Build Ultimate SMS Bot APK
 
 on:
   push:
@@ -27,13 +27,13 @@ jobs:
         mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/values
 
-        # ۱. تنظیمات گریدل
+        # تنظیمات گریدل
         echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
         echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
         echo "rootProject.name = 'SmsTelegramBot'" >> settings.gradle
         echo "include ':app'" >> settings.gradle
 
-        # ۲. گریدل پروژه
+        # گریدل پروژه
         cat << 'EOF' > build.gradle
         buildscript {
             repositories { google(); mavenCentral() }
@@ -41,7 +41,7 @@ jobs:
         }
         EOF
 
-        # ۳. گریدل اپلیکیشن
+        # گریدل اپلیکیشن
         cat << 'EOF' > app/build.gradle
         plugins { id 'com.android.application' }
         android {
@@ -51,13 +51,13 @@ jobs:
                 applicationId "com.example.smsbot"
                 minSdk 24
                 targetSdk 34
-                versionCode 4
-                versionName "4.0"
+                versionCode 5
+                versionName "5.0"
             }
         }
         EOF
 
-        # ۴. مانیفست اندروید
+        # مانیفست اندروید
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <uses-permission android:name="android.permission.RECEIVE_SMS" />
@@ -81,7 +81,7 @@ jobs:
         </manifest>
         EOF
 
-        # ۵. تغییر تحول اساسی در رابط کاربری (Beautiful & User-Friendly UI)
+        # رابط کاربری شیک و یوزرفرندلی
         cat << 'EOF' > app/src/main/res/layout/activity_main.xml
         <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" 
             android:layout_width="match_parent" 
@@ -120,7 +120,6 @@ jobs:
                     android:layout_height="wrap_content"
                     android:background="#FFFFFF"
                     android:padding="16dp"
-                    android:elevation="2dp"
                     android:layout_marginBottom="16dp">
                     
                     <TextView android:text="تنظیمات اتصال تلگرام" android:textSize="14sp" android:textStyle="bold" android:textColor="#475569" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="12dp"/>
@@ -134,7 +133,6 @@ jobs:
                     android:layout_height="wrap_content"
                     android:background="#FFFFFF"
                     android:padding="16dp"
-                    android:elevation="2dp"
                     android:layout_marginBottom="24dp">
                     
                     <TextView android:text="فیلتر سرشماره‌های بانکی" android:textSize="14sp" android:textStyle="bold" android:textColor="#475569" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginBottom="6dp"/>
@@ -166,7 +164,7 @@ jobs:
         </ScrollView>
         EOF
 
-        # ۶. کد جاوا مدیریت ظاهر و المان‌ها
+        # کد جاوا اصلی
         cat << 'EOF' > app/src/main/java/com/example/smsbot/MainActivity.java
         package com.example.smsbot;
         import android.app.Activity;
@@ -216,10 +214,91 @@ jobs:
         }
         EOF
 
-        # ۷. منطق اسکن با قابلیت عدم حساسیت به حروف بزرگ و کوچک (Case-Insensitive)
+        # گیرنده پیامک بدون حساسیت به حروف بزرگ و کوچک
         cat << 'EOF' > app/src/main/java/com/example/smsbot/SmsReceiver.java
         package com.example.smsbot;
         import android.content.BroadcastReceiver;
         import android.content.Context;
-        import android.content.Intent
-        
+        import android.content.Intent;
+        import android.content.SharedPreferences;
+        import android.os.Bundle;
+        import android.telephony.SmsMessage;
+        import java.net.HttpURLConnection;
+        import java.net.URL;
+
+        public class SmsReceiver extends BroadcastReceiver {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent == null || intent.getExtras() == null) return;
+                
+                SharedPreferences prefs = context.getSharedPreferences("SmsBotPrefs", Context.MODE_PRIVATE);
+                final String token = prefs.getString("token", "");
+                final String chatId = prefs.getString("chatId", "");
+                String allowedSenders = prefs.getString("senders", "");
+
+                if (token.isEmpty() || chatId.isEmpty()) return;
+
+                Object[] pdus = (Object[]) intent.getExtras().get("pdus");
+                if (pdus != null) {
+                    for (Object pdu : pdus) {
+                        SmsMessage sms = SmsMessage.createFromPdu((byte[]) pdu);
+                        String sender = sms.getOriginatingAddress();
+                        String body = sms.getMessageBody();
+
+                        if (sender == null || body == null) continue;
+
+                        boolean isAllowed = false;
+                        if (!allowedSenders.isEmpty()) {
+                            String[] sendersArray = allowedSenders.split(",");
+                            for (String s : sendersArray) {
+                                if (sender.toLowerCase().contains(s.trim().toLowerCase())) {
+                                    isAllowed = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (isAllowed && (body.contains("واریز") || body.contains("موفق") || body.contains("مانده"))) {
+                            sendToTelegramAndDie(token, chatId, "فرستنده: " + sender + "\n\n" + body);
+                        }
+                    }
+                }
+            }
+
+            private void sendToTelegramAndDie(final String token, final String chatId, final String text) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        HttpURLConnection conn = null;
+                        try {
+                            String urlString = "https://api.telegram.org/bot" + token + "/sendMessage?chat_id=" + chatId + "&text=" + java.net.URLEncoder.encode(text, "UTF-8");
+                            URL url = new URL(urlString);
+                            conn = (HttpURLConnection) url.openConnection();
+                            conn.setRequestMethod("GET");
+                            conn.setConnectTimeout(4000);
+                            conn.setReadTimeout(4000);
+                            conn.getInputStream().read();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } finally {
+                            if (conn != null) conn.disconnect();
+                        }
+                    }
+                }).start();
+            }
+        }
+        EOF
+
+        echo '<resources><string name="app_name">SmsBot</string></resources>' > app/src/main/res/values/strings.xml
+
+    - name: Build Clean Android Production APK
+      run: |
+        gradle wrapper --gradle-version 8.5
+        chmod +x gradlew
+        ./gradlew :app:assembleDebug --no-daemon
+
+    - name: Upload Clean APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: SMS-Premium-Bot
+        path: 'app/build/outputs/apk/debug/*.apk'
