@@ -27,13 +27,11 @@ jobs:
         mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/values
 
-        # ۱. تنظیمات گریدل
         echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
         echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
         echo "rootProject.name = 'SmsTelegramBot'" >> settings.gradle
         echo "include ':app'" >> settings.gradle
 
-        # ۲. گریدل پروژه
         cat << 'EOF' > build.gradle
         buildscript {
             repositories { google(); mavenCentral() }
@@ -41,7 +39,6 @@ jobs:
         }
         EOF
 
-        # ۳. گریدل اپلیکیشن
         cat << 'EOF' > app/build.gradle
         plugins { id 'com.android.application' }
         android {
@@ -51,13 +48,12 @@ jobs:
                 applicationId "com.example.smsbot"
                 minSdk 24
                 targetSdk 34
-                versionCode 6
-                versionName "6.0"
+                versionCode 7
+                versionName "7.0"
             }
         }
         EOF
 
-        # ۴. مانیفست اندروید
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <uses-permission android:name="android.permission.RECEIVE_SMS" />
@@ -81,7 +77,6 @@ jobs:
         </manifest>
         EOF
 
-        # ۵. رابط کاربری تمیز، مرتب و راست‌چین با تگ‌های بومی (بدون ایجاد خطا)
         cat << 'EOF' > app/src/main/res/layout/activity_main.xml
         <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" 
             android:layout_width="match_parent" 
@@ -142,7 +137,6 @@ jobs:
         </ScrollView>
         EOF
 
-        # ۶. کد جاوا مدیریت دکمه و حافظه گوشی
         cat << 'EOF' > app/src/main/java/com/example/smsbot/MainActivity.java
         package com.example.smsbot;
         import android.app.Activity;
@@ -192,7 +186,6 @@ jobs:
         }
         EOF
 
-        # ۷. منطق رسیور هوشمند و بدون حساسیت به حروف بزرگ و کوچک
         cat << 'EOF' > app/src/main/java/com/example/smsbot/SmsReceiver.java
         package com.example.smsbot;
         import android.content.BroadcastReceiver;
