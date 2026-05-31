@@ -1,4 +1,4 @@
-name: Build Fixed SMS Bot APK
+name: Build Ultimate Fixed SMS Bot APK
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         java-version: '17'
-        distribution: 'temurin'
+        distribution: 'zulu'
 
     - name: Generate Clean Android Project
       run: |
@@ -37,6 +37,9 @@ jobs:
             repositories { google(); mavenCentral() }
             dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
         }
+        allprojects {
+            repositories { google(); mavenCentral() }
+        }
         EOF
 
         cat << 'EOF' > app/build.gradle
@@ -48,8 +51,8 @@ jobs:
                 applicationId "com.example.smsbot"
                 minSdk 24
                 targetSdk 34
-                versionCode 8
-                versionName "8.0"
+                versionCode 9
+                versionName "9.0"
             }
         }
         EOF
